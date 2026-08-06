@@ -1,0 +1,32 @@
+name: 股票周报
+
+on:
+  schedule:
+    - cron: "0 1 * * 6"   # 每周六 09:00 (北京时间 UTC+8)
+  workflow_dispatch:       # 也可手动触发
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: 安装中文字体 (图表渲染)
+        run: sudo apt-get update && sudo apt-get install -y fonts-noto-cjk
+
+      - run: pip install requests matplotlib numpy
+
+      - run: python .opencode/skills/stock-analysis/scripts/mailer.py
+        env:
+          PYTHONIOENCODING: utf-8
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASS: ${{ secrets.SMTP_PASS }}
+          FROM_ADDR: ${{ secrets.FROM_ADDR }}
+          TO_ADDR: ${{ secrets.TO_ADDR }}
+          STOCK_LIST: ${{ secrets.STOCK_LIST || '600036,600660,600690' }}
