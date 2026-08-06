@@ -1,0 +1,14 @@
+node_modules
+package.json
+package-lock.json
+bun.lock
+.gitignore
+
+# Python
+__pycache__/
+*.pyc
+
+# Skill 运行时产物
+skills/stock-analysis/charts/
+skills/stock-analysis/history.json
+skills/stock-analysis/mail_config.json

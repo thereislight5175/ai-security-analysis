@@ -1,17 +1,17 @@
 import os
 import sys
 import json
+import io
+import contextlib
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
-from email.mime.image import MIMEImage
-from pathlib import Path
 
 _SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 if _SCRIPT_DIR not in sys.path:
     sys.path.insert(0, _SCRIPT_DIR)
 
-from config import CHART_DIR, SKILL_DIR
+from config import SKILL_DIR
 
 CONFIG_PATH = os.path.join(SKILL_DIR, "mail_config.json")
 
@@ -51,7 +51,7 @@ def load_config():
     return None
 
 
-def send_email(cfg, text_result, chart_paths):
+def send_email(cfg, text_result):
     msg = MIMEMultipart()
     msg["From"] = cfg["from_addr"]
     msg["To"] = cfg["to_addr"]
@@ -59,14 +59,6 @@ def send_email(cfg, text_result, chart_paths):
 
     body = MIMEText(text_result, "plain", "utf-8")
     msg.attach(body)
-
-    for path in chart_paths:
-        p = Path(path)
-        if p.exists():
-            with open(p, "rb") as f:
-                img = MIMEImage(f.read())
-                img.add_header("Content-Disposition", "attachment", filename=p.name)
-                msg.attach(img)
 
     try:
         if cfg["smtp_port"] == 465:
@@ -87,59 +79,18 @@ def run_and_mail():
     if not cfg:
         return
 
-    from fetcher import normalize_code, fetch_all
-    from consensus import check_consistency
-    from indicator import calc_ma120, determine_zone
-    from estimator import estimate_wait_days
-    from chart import generate_chart
+    from stock_analysis import analyze_batch
 
-    all_text = ""
-    chart_paths = []
+    buf = io.StringIO()
+    with contextlib.redirect_stdout(buf):
+        analyze_batch([str(c) for c in cfg["stocks"]])
 
-    for code in cfg["stocks"]:
-        market, raw_code = normalize_code(str(code))
-        display = "%s%s" % (market.upper(), raw_code)
+    content = "\n".join(
+        line for line in buf.getvalue().splitlines()
+        if not line.strip().startswith("[图表]")
+    ).strip()
 
-        sources = fetch_all(market, raw_code)
-        if not sources:
-            all_text += "\n%s: 获取失败\n" % display
-            continue
-
-        result = check_consistency(sources)
-        if not result:
-            all_text += "\n%s: 数据不一致\n" % display
-            continue
-
-        records = result["records"] if isinstance(result, dict) else result
-        close = records[-1]["close"]
-        ma120, _ = calc_ma120(records)
-        zone = determine_zone(close, ma120)
-        zone["current_price"] = close
-
-        lines = [
-            "\n== %s ==" % display,
-            "  当前价: %.2f" % close,
-            "  MA120:  %.2f" % ma120,
-            "  买入线: %.2f (MA120x0.88)" % zone["buy_line"],
-            "  卖出线: %.2f (MA120x1.12)" % zone["sell_line"],
-        ]
-
-        if zone["zone"] == "buy":
-            lines.append("  判定: 买入区间 - 建议买入")
-        elif zone["zone"] == "sell":
-            lines.append("  判定: 卖出区间 - 建议卖出")
-        else:
-            lines.append("  判定: 等待区间 - 持有观察")
-            bd = estimate_wait_days(records, close, zone["buy_line"])
-            sd = estimate_wait_days(records, close, zone["sell_line"])
-            if bd: lines.append("  预计买入需等: %d交易日" % bd)
-            if sd: lines.append("  预计卖出需等: %d交易日" % sd)
-
-        all_text += "\n".join(lines) + "\n"
-        chart_path = generate_chart(records, zone, display)
-        chart_paths.append(chart_path)
-
-    send_email(cfg, all_text.strip(), chart_paths)
+    send_email(cfg, content)
 
 
 if __name__ == "__main__":
