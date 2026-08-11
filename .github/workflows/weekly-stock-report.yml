@@ -2,7 +2,7 @@ name: 股票周报
 
 on:
   schedule:
-    - cron: "0 9 * * *"   # 每周六 09:00 (北京时间 UTC+8)
+    - cron: "0 1 * * *"   # 每周六 09:00 (北京时间 UTC+8)
   workflow_dispatch:       # 也可手动触发
 
 jobs:
