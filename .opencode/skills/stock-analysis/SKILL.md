@@ -20,9 +20,14 @@ python .opencode\skills\stock-analysis\scripts\stock_analysis.py 600519
 python .opencode\skills\stock-analysis\scripts\stock_analysis.py 600519 000858 00700
 python .opencode\skills\stock-analysis\scripts\stock_analysis.py SH600519
 python .opencode\skills\stock-analysis\scripts\stock_analysis.py 600519 --name "贵州茅台"
+python .opencode\skills\stock-analysis\scripts\stock_analysis.py      # 省略代码则分析默认股票池
 ```
 
 Supported code formats: `600519`, `SH600519`, `sh600519`, `600519.SH`.
+
+Omitting all codes analyzes the default 27-stock pool defined in `scripts/config.py` (`DEFAULT_STOCKS`):
+
+长江电力(600900)、中国移动(600941)、中国神华(601088)、中国海油(600938)、五粮液(000858)、招商银行(600036)、美的集团(000333)、中国平安(601318)、伊利股份(600887)、宁波银行(002142)、工商银行(601398)、泸州老窖(000568)、宁沪高速(600377)、海天味业(603288)、东阿阿胶(000423)、东鹏饮料(605499)、山西汾酒(600809)、唐山港(601000)、中国石油(601857)、青岛啤酒(600600)、双汇发展(000895)、云南白药(000538)、中国电信(601728)、粤高速A(000429)、华润江中(600222)、格力电器(000651)、重庆啤酒(600132)
 
 ## Workflow
 

@@ -10,7 +10,7 @@ from consensus import check_consistency
 from indicator import calc_ma120, determine_zone
 from estimator import estimate_wait_days
 from chart import generate_chart
-from config import SKILL_DIR
+from config import SKILL_DIR, DEFAULT_STOCKS
 
 SOURCE_NAMES = {
     "sina": "新浪财经",
@@ -27,13 +27,12 @@ ZONE_LABELS = {
 ZONE_SHORT = {"buy": "买入", "sell": "卖出", "wait": "等待"}
 
 KNOWN_STOCKS = {
+    **DEFAULT_STOCKS,
     "600519": "贵州茅台",
-    "600036": "招商银行",
     "600660": "福耀玻璃",
     "600690": "海尔智家",
     "600000": "浦发银行",
     "603508": "思维列控",
-    "000858": "五粮液",
     "00700": "腾讯控股",
 }
 
@@ -247,15 +246,17 @@ def analyze_batch(codes, names=None):
 
 def main():
     parser = argparse.ArgumentParser(description="Stock Analysis Skill")
-    parser.add_argument("codes", nargs="+", help="Stock code(s), e.g. 600519")
-    parser.add_argument("--name", "-n", help="Stock display name")
+    parser.add_argument("codes", nargs="*", help="Stock code(s), e.g. 600519. 省略则分析默认股票池")
+    parser.add_argument("--name", "-n", help="Stock display name (仅单只时有效)")
     args = parser.parse_args()
 
-    if len(args.codes) == 1:
-        analyze_stock(args.codes[0], name=args.name or resolve_name(args.codes[0]))
+    codes = args.codes or list(DEFAULT_STOCKS.keys())
+
+    if len(codes) == 1:
+        analyze_stock(codes[0], name=args.name or resolve_name(codes[0]))
     else:
-        names = {c: args.name} if args.name else {}
-        analyze_batch(args.codes, names=names)
+        names = {c: args.name for c in codes} if args.name else {}
+        analyze_batch(codes, names=names)
 
 
 if __name__ == "__main__":
